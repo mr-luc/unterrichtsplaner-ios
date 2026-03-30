@@ -693,7 +693,7 @@ function initMsal(clientId) {
     auth: {
       clientId,
       authority: 'https://login.microsoftonline.com/common',
-      redirectUri: window.location.origin + window.location.pathname.replace(/\/$/, '') + '/'
+      redirectUri: 'https://mr-luc.github.io/unterrichtsplaner/'
     },
     cache: { cacheLocation: 'localStorage' }
   });
