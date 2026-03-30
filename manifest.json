@@ -1,6 +1,6 @@
 {
   "name": "Unterrichtsplaner – Schulzentrum Oberes Elztal",
-  "short_name": "Unterrichtsplaner",
+  "short_name": "Unterricht",
   "description": "Stundenplan- und Unterrichtsplaner mit KI-Assistent",
   "start_url": "/",
   "display": "standalone",
