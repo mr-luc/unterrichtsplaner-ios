@@ -346,6 +346,17 @@ const EINTRAEGE = [
 
 // Unique classes for AI context
 const ALL_KLASSEN = [...new Set(EINTRAEGE.map(e => `${e.fach} ${e.klasse}`))].sort();
+const VALID_KEYS = new Set(EINTRAEGE.map(e => `${e.fach}_${e.klasse}`));
+const VALID_STATUSES = ['geplant', 'in-arbeit', 'fertig'];
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // ── STATE ─────────────────────────────────────────────────
 let state = {};
@@ -355,6 +366,7 @@ function getKey(f, k) { return `${f}_${k}`; }
 function getS(f, k) {
   const key = getKey(f, k);
   if (!state[key]) state[key] = { thema:"", notiz:"", status:"geplant" };
+  if (!VALID_STATUSES.includes(state[key].status)) state[key].status = 'geplant';
   return state[key];
 }
 
@@ -423,11 +435,11 @@ function renderGrid() {
         chip.onclick = () => openModal(e.fach, e.klasse);
         chip.innerHTML = `
           <div class="kl-top">
-            <span class="kl-name">${e.klasse}</span>
+            <span class="kl-name">${escapeHtml(e.klasse)}</span>
             <span class="status-pip ${s.status}"></span>
           </div>
-          <div class="kl-sub">${e.fach} · ${e.raum}</div>
-          ${s.thema ? `<div class="kl-thema">${s.thema}</div>` : ''}
+          <div class="kl-sub">${escapeHtml(e.fach)} · ${escapeHtml(e.raum)}</div>
+          ${s.thema ? `<div class="kl-thema">${escapeHtml(s.thema)}</div>` : ''}
         `;
         cell.appendChild(chip);
       });
@@ -449,7 +461,7 @@ function openModal(fach, klasse) {
   const s = getS(fach, klasse);
   modalStatus = s.status;
   document.getElementById('modal-title').innerHTML =
-    `<span style="color:${FACH_COLOR[fach]}">${fach}</span> · ${klasse}`;
+    `<span style="color:${FACH_COLOR[fach]}">${escapeHtml(fach)}</span> · ${escapeHtml(klasse)}`;
   document.getElementById('modal-thema').value = s.thema || '';
   document.getElementById('modal-notiz').value  = s.notiz  || '';
   selStatus(s.status);
@@ -504,7 +516,7 @@ function addMessage(role, text, loading=false) {
   const msgs = document.getElementById('ai-messages');
   const div = document.createElement('div');
   div.className = `ai-msg ${role}${loading?' loading':''}`;
-  div.innerHTML = `<div class="ai-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  div.innerHTML = `<div class="ai-bubble">${escapeHtml(text).replace(/\n/g,'<br>')}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   return div;
@@ -567,8 +579,11 @@ async function sendMessage() {
         const updates = JSON.parse(updMatch[1].trim());
         let count = 0;
         Object.entries(updates).forEach(([key, vals]) => {
+          if (!VALID_KEYS.has(key)) return;
           if (!state[key]) state[key] = { thema:'', notiz:'', status:'geplant' };
-          Object.assign(state[key], vals);
+          if (typeof vals.thema === 'string') state[key].thema = vals.thema.slice(0, 200);
+          if (typeof vals.notiz === 'string') state[key].notiz = vals.notiz.slice(0, 500);
+          if (VALID_STATUSES.includes(vals.status)) state[key].status = vals.status;
           count++;
         });
         save(); renderGrid();
@@ -577,7 +592,7 @@ async function sendMessage() {
     }
 
     loadingDiv.className = 'ai-msg assistant';
-    loadingDiv.querySelector('.ai-bubble').innerHTML = displayText.replace(/\n/g,'<br>');
+    loadingDiv.querySelector('.ai-bubble').innerHTML = escapeHtml(displayText).replace(/\n/g,'<br>');
 
   } catch(err) {
     loadingDiv.className = 'ai-msg assistant';
