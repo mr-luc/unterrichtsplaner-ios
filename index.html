@@ -698,12 +698,20 @@ function initMsal(clientId) {
     cache: { cacheLocation: 'localStorage' }
   });
   msalInstance.initialize().then(() => {
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-      msAccount = accounts[0];
-      updateOdUI(true);
-      loadFromOneDrive();
-    }
+    msalInstance.handleRedirectPromise().then(result => {
+      if (result && result.account) {
+        msAccount = result.account;
+        updateOdUI(true);
+        loadFromOneDrive();
+        return;
+      }
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) {
+        msAccount = accounts[0];
+        updateOdUI(true);
+        loadFromOneDrive();
+      }
+    }).catch(e => console.error('Redirect-Fehler', e));
   });
 }
 
@@ -725,15 +733,15 @@ function updateOdUI(loggedIn) {
 async function msToggle() {
   if (!msalInstance) return;
   if (msAccount) {
-    await msalInstance.logoutPopup({ account: msAccount });
+    localStorage.removeItem('up_ms_clientid');
     msAccount = null;
+    msalInstance = null;
     updateOdUI(false);
+    document.getElementById('od-auth-row').style.display = 'none';
+    document.getElementById('od-setup-row').style.display = 'flex';
   } else {
     try {
-      const result = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
-      msAccount = result.account;
-      updateOdUI(true);
-      await loadFromOneDrive();
+      await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES });
     } catch(e) { console.error('Login-Fehler', e); }
   }
 }
@@ -745,9 +753,8 @@ async function getAccessToken() {
     return result.accessToken;
   } catch {
     try {
-      const result = await msalInstance.acquireTokenPopup({ scopes: GRAPH_SCOPES });
-      msAccount = result.account;
-      return result.accessToken;
+      await msalInstance.acquireTokenRedirect({ scopes: GRAPH_SCOPES });
+      return null;
     } catch(e) { console.error('Token-Fehler', e); return null; }
   }
 }
