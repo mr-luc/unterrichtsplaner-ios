@@ -289,6 +289,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <span class="od-header-label">OneDrive</span>
       <span class="od-user-text" id="od-user"></span>
       <button class="od-btn" id="od-btn" onclick="msToggle()">Anmelden</button>
+      <button onclick="resetClientId()" style="background:none;border:none;cursor:pointer;font-size:12px;color:#6b6b8a;padding:0 2px" title="Client-ID ändern">✏️</button>
     </div>
     <!-- Anthropic API Key -->
     <div class="ai-key-row">
@@ -666,6 +667,15 @@ function setSyncStatus(state) {
   el.textContent = labels[state] || '';
   if (state === 'error') el.onclick = () => syncToOneDrive();
   else el.onclick = null;
+}
+
+function resetClientId() {
+  localStorage.removeItem('up_ms_clientid');
+  msalInstance = null;
+  msAccount = null;
+  document.getElementById('ms-clientid-input').value = '';
+  document.getElementById('od-auth-row').style.display = 'none';
+  document.getElementById('od-setup-row').style.display = 'flex';
 }
 
 function saveClientId() {
