@@ -53,8 +53,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .sp-corner { }
 .sp-day-header {
   background: var(--header); color: white; text-align: center;
-  padding: 8px 4px; border-radius: var(--r); font-weight: 700; font-size: 13px;
+  padding: 6px 4px; border-radius: var(--r); font-weight: 700; font-size: 13px;
 }
+.sp-day-header .day-date { font-size: 10px; font-weight: 400; color: #aaaacc; margin-top: 2px; }
+.sp-day-header.today { background: #4c1d95; }
 .sp-time {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 4px 2px; background: var(--surface); border-radius: var(--r);
@@ -263,9 +265,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <div class="topbar-title">Unterrichtsplaner</div>
     <div class="topbar-sub">Schulzentrum Oberes Elztal</div>
   </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <button onclick="changeWeek(-1)" style="background:#2e2e44;border:none;color:#aaaacc;font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer">‹</button>
+    <div style="text-align:center;min-width:80px">
+      <div id="woche-label" style="font-size:12px;font-weight:700;color:white"></div>
+      <div id="woche-range" style="font-size:10px;color:#8888aa"></div>
+    </div>
+    <button onclick="changeWeek(1)" style="background:#2e2e44;border:none;color:#aaaacc;font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer">›</button>
+  </div>
   <div class="woche-toggle">
-    <button class="woche-btn active-a" id="btn-a" onclick="setWoche('A')">A-Woche</button>
-    <button class="woche-btn" id="btn-b" onclick="setWoche('B')">B-Woche</button>
+    <button class="woche-btn active-a" id="btn-a" onclick="setWocheManual('A')">A</button>
+    <button class="woche-btn" id="btn-b" onclick="setWocheManual('B')">B</button>
   </div>
   <span class="sync-status" id="sync-status" title="OneDrive-Sync" style="display:none"></span>
 </div>
@@ -456,10 +466,62 @@ function saveApiKey() {
 
 // ── WOCHE ────────────────────────────────────────────────
 let currentWoche = "A";
+let weekOffset = 0; // 0 = aktuelle Woche
+// Referenz: KW1 2024 = A-Woche (anpassbar)
+const AB_REF_MONDAY = new Date(2024, 0, 1); // 01.01.2024 = KW1 = A
+
+function getMonday(offset) {
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const monday = new Date(now);
+  monday.setHours(0,0,0,0);
+  monday.setDate(now.getDate() - day + 1 + offset * 7);
+  return monday;
+}
+
+function getIsoWeek(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay()+6)%7);
+  const week1 = new Date(d.getFullYear(),0,4);
+  return 1 + Math.round(((d-week1)/86400000 - 3 + (week1.getDay()+6)%7)/7);
+}
+
+function wocheFromDate(monday) {
+  const refMs = AB_REF_MONDAY.getTime();
+  const monMs = monday.getTime();
+  const diffWeeks = Math.round((monMs - refMs) / (7*86400000));
+  return diffWeeks % 2 === 0 ? 'A' : 'B';
+}
+
+function changeWeek(delta) {
+  weekOffset += delta;
+  const monday = getMonday(weekOffset);
+  currentWoche = wocheFromDate(monday);
+  updateWocheUI();
+  renderGrid();
+}
+
+function setWocheManual(w) {
+  currentWoche = w;
+  updateWocheUI();
+  renderGrid();
+}
+
+function updateWocheUI() {
+  const monday = getMonday(weekOffset);
+  const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
+  const fmt = d => d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+  const kw = getIsoWeek(monday);
+  document.getElementById('woche-label').textContent = `KW ${kw} · ${currentWoche}-Woche`;
+  document.getElementById('woche-range').textContent = `${fmt(monday)} – ${fmt(friday)}`;
+  document.getElementById('btn-a').className = 'woche-btn' + (currentWoche==='A'?' active-a':'');
+  document.getElementById('btn-b').className = 'woche-btn' + (currentWoche==='B'?' active-b':'');
+}
+
 function setWoche(w) {
   currentWoche = w;
-  document.getElementById('btn-a').className = 'woche-btn' + (w==='A'?' active-a':'');
-  document.getElementById('btn-b').className = 'woche-btn' + (w==='B'?' active-b':'');
+  updateWocheUI();
   renderGrid();
 }
 
@@ -467,11 +529,15 @@ function setWoche(w) {
 function renderGrid() {
   const grid = document.getElementById('sp-grid');
   grid.innerHTML = '';
+  const monday = getMonday(weekOffset);
+  const today = new Date(); today.setHours(0,0,0,0);
   grid.appendChild(document.createElement('div')); // corner
-  TAGE.forEach(tag => {
+  TAGE.forEach((tag, i) => {
+    const dayDate = new Date(monday); dayDate.setDate(monday.getDate() + i);
+    const isToday = dayDate.getTime() === today.getTime();
     const h = document.createElement('div');
-    h.className = 'sp-day-header';
-    h.textContent = tag;
+    h.className = 'sp-day-header' + (isToday ? ' today' : '');
+    h.innerHTML = `${tag}<div class="day-date">${dayDate.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' })}</div>`;
     grid.appendChild(h);
   });
   STUNDEN.forEach(std => {
@@ -964,6 +1030,8 @@ if (!apiKey) {
   document.getElementById('api-key-input').value = '••••••••••••';
   document.getElementById('key-status').textContent = '✓ aktiv';
 }
+currentWoche = wocheFromDate(getMonday(0));
+updateWocheUI();
 renderGrid();
 
 // OneDrive init
