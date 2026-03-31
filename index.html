@@ -57,6 +57,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 .sp-day-header .day-date { font-size: 10px; font-weight: 400; color: #aaaacc; margin-top: 2px; }
 .sp-day-header.today { background: #4c1d95; }
+.sp-day-header.ferien { background: #92400e; }
+.ferien-cell { background: #fffbeb !important; }
+.ferien-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: var(--r); padding: 8px; text-align: center; font-size: 13px; font-weight: 600; color: #92400e; }
 .sp-time {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 4px 2px; background: var(--surface); border-radius: var(--r);
@@ -382,6 +385,24 @@ const TAGE = ["MO","DI","MI","DO","FR"];
 const FACH_CLASS = { Bio:"bio", Che:"che", IT:"it" };
 const FACH_COLOR = { Bio:"var(--bio)", Che:"var(--che)", IT:"var(--it)" };
 
+// Baden-Württemberg Schulferien 2025/2026
+const FERIEN = [
+  { name:"Herbstferien",     von: new Date(2025,9,27),  bis: new Date(2025,10,1)  },
+  { name:"Weihnachtsferien", von: new Date(2025,11,22), bis: new Date(2026,0,10)  },
+  { name:"Faschingsferien",  von: new Date(2026,1,23),  bis: new Date(2026,1,28)  },
+  { name:"Osterferien",      von: new Date(2026,2,30),  bis: new Date(2026,3,17)  },
+  { name:"Pfingstferien",    von: new Date(2026,4,26),  bis: new Date(2026,5,6)   },
+  { name:"Sommerferien",     von: new Date(2026,6,30),  bis: new Date(2026,8,12)  },
+];
+
+function getFerienName(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  for (const f of FERIEN) {
+    if (d >= f.von && d <= f.bis) return f.name;
+  }
+  return null;
+}
+
 const EINTRAEGE = [
   { std:1, tag:"MO", fach:"Bio", klasse:"R10a", raum:"207",    woche:"AB" },
   { std:2, tag:"MO", fach:"Bio", klasse:"R10b", raum:"207",    woche:"AB" },
@@ -531,23 +552,38 @@ function renderGrid() {
   grid.innerHTML = '';
   const monday = getMonday(weekOffset);
   const today = new Date(); today.setHours(0,0,0,0);
+  // Ferien pro Tag vorberechnen
+  const dayDates = TAGE.map((_, i) => { const d = new Date(monday); d.setDate(monday.getDate()+i); return d; });
+  const ferienTage = dayDates.map(d => getFerienName(d));
+  const alleFerienName = ferienTage.every(f => f && f === ferienTage[0]) ? ferienTage[0] : null;
   grid.appendChild(document.createElement('div')); // corner
   TAGE.forEach((tag, i) => {
-    const dayDate = new Date(monday); dayDate.setDate(monday.getDate() + i);
+    const dayDate = dayDates[i];
     const isToday = dayDate.getTime() === today.getTime();
+    const ferien = ferienTage[i];
     const h = document.createElement('div');
-    h.className = 'sp-day-header' + (isToday ? ' today' : '');
+    h.className = 'sp-day-header' + (isToday ? ' today' : '') + (ferien ? ' ferien' : '');
     h.innerHTML = `${tag}<div class="day-date">${dayDate.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' })}</div>`;
     grid.appendChild(h);
   });
+  // Ferienband über ganzer Woche anzeigen
+  if (alleFerienName) {
+    const banner = document.createElement('div');
+    banner.className = 'ferien-banner';
+    banner.style.gridColumn = '1 / -1';
+    banner.textContent = `🏖 ${alleFerienName}`;
+    grid.appendChild(banner);
+  }
   STUNDEN.forEach(std => {
     const tc = document.createElement('div');
     tc.className = 'sp-time';
     tc.innerHTML = `<div class="sn">${std.std}</div><div class="st">${std.von}<br>${std.bis}</div>`;
     grid.appendChild(tc);
-    TAGE.forEach(tag => {
+    TAGE.forEach((tag, i) => {
       const cell = document.createElement('div');
-      cell.className = 'sp-cell';
+      const ferien = ferienTage[i];
+      cell.className = 'sp-cell' + (ferien ? ' ferien-cell' : '');
+      if (ferien) { grid.appendChild(cell); return; }
       const entries = EINTRAEGE.filter(e =>
         e.std===std.std && e.tag===tag && (e.woche==='AB' || e.woche===currentWoche)
       );
