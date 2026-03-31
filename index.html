@@ -509,10 +509,7 @@ function getIsoWeek(date) {
 }
 
 function wocheFromDate(monday) {
-  const refMs = AB_REF_MONDAY.getTime();
-  const monMs = monday.getTime();
-  const diffWeeks = Math.round((monMs - refMs) / (7*86400000));
-  return diffWeeks % 2 === 0 ? 'A' : 'B';
+  return getIsoWeek(monday) % 2 === 0 ? 'A' : 'B';
 }
 
 function changeWeek(delta) {
