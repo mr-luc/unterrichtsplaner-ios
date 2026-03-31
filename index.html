@@ -189,6 +189,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .btn-save { flex: 1; padding: 11px; border: none; border-radius: 8px; background: var(--ai); color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
 .btn-cancel { padding: 11px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: white; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
 .btn-od-folder { padding: 11px 14px; border: 1.5px solid #0078d4; border-radius: 8px; background: white; color: #0078d4; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
+.od-file-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; border:1px solid var(--border); margin-bottom:5px; background:white; }
+.od-file-item a { flex:1; color:var(--text); text-decoration:none; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.od-file-item a:hover { color:#0078d4; }
+.od-file-date { font-size:11px; color:var(--muted); white-space:nowrap; }
+.od-file-loading { color:var(--muted); font-size:13px; padding:6px 0; }
+.od-upload-progress { font-size:12px; color:#0078d4; padding:4px 0; }
 
 /* SETUP SCREEN */
 .setup-screen {
@@ -327,6 +333,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <button class="msb" onclick="selStatus('geplant')">geplant</button>
       <button class="msb" onclick="selStatus('in-arbeit')">in Arbeit</button>
       <button class="msb" onclick="selStatus('fertig')">fertig</button>
+    </div>
+    <!-- OneDrive Dateien -->
+    <div id="od-files-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:6px">
+        <label style="margin:0">📁 OneDrive-Materialien</label>
+        <label style="cursor:pointer;color:#0078d4;font-size:12px;font-weight:600;margin:0">
+          + Hochladen
+          <input type="file" id="od-upload-input" multiple style="display:none" onchange="uploadFiles()" />
+        </label>
+      </div>
+      <div id="od-files-list"></div>
     </div>
     <div class="modal-actions">
       <button class="btn-save" onclick="saveModal()">Speichern</button>
@@ -507,37 +524,92 @@ function openModal(fach, klasse) {
   document.getElementById('modal-thema').value = s.thema || '';
   document.getElementById('modal-notiz').value  = s.notiz  || '';
   selStatus(s.status);
-  document.getElementById('modal-od-btn').style.display = msAccount ? '' : 'none';
+  const hasOd = !!msAccount;
+  document.getElementById('modal-od-btn').style.display = hasOd ? '' : 'none';
+  document.getElementById('od-files-section').style.display = hasOd ? '' : 'none';
+  if (hasOd) loadOdFiles(fach);
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+async function getOrCreateFolder(fach) {
+  const token = await getAccessToken();
+  if (!token) return null;
+  const folderPath = `unterrichtsplaner/${fach}`;
+  let res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${folderPath}`, {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (res.status === 404) {
+    res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner:/children`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: fach, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+    });
+  }
+  return res.ok ? await res.json() : null;
 }
 
 async function openOdFolder() {
   if (!msAccount) return;
-  const parts = modalKey.split('_');
-  const fach = parts[0];
-  const folderPath = `unterrichtsplaner/${fach}`;
+  const fach = modalKey.split('_')[0];
+  const btn = document.getElementById('modal-od-btn');
+  btn.textContent = '⏳'; btn.disabled = true;
+  const folder = await getOrCreateFolder(fach);
+  if (folder?.webUrl) window.open(folder.webUrl, '_blank');
+  btn.textContent = '📁 OneDrive'; btn.disabled = false;
+}
+
+async function loadOdFiles(fach) {
+  const list = document.getElementById('od-files-list');
+  list.innerHTML = '<div class="od-file-loading">Laden…</div>';
+  const token = await getAccessToken();
+  if (!token) { list.innerHTML = ''; return; }
+  try {
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}:/children?$orderby=lastModifiedDateTime desc&$top=10&$select=name,webUrl,lastModifiedDateTime,file`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (res.status === 404) { list.innerHTML = '<div class="od-file-loading">Noch keine Dateien</div>'; return; }
+    const data = await res.json();
+    const files = (data.value || []).filter(f => f.file);
+    if (!files.length) { list.innerHTML = '<div class="od-file-loading">Noch keine Dateien</div>'; return; }
+    list.innerHTML = files.map(f => {
+      const date = new Date(f.lastModifiedDateTime).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+      const icon = fileIcon(f.name);
+      return `<div class="od-file-item"><span>${icon}</span><a href="${f.webUrl}" target="_blank">${escapeHtml(f.name)}</a><span class="od-file-date">${date}</span></div>`;
+    }).join('');
+  } catch(e) { list.innerHTML = ''; }
+}
+
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['doc','docx'].includes(ext)) return '📄';
+  if (['xls','xlsx'].includes(ext)) return '📊';
+  if (['ppt','pptx'].includes(ext)) return '📑';
+  if (['pdf'].includes(ext)) return '📕';
+  if (['jpg','jpeg','png','gif'].includes(ext)) return '🖼️';
+  return '📎';
+}
+
+async function uploadFiles() {
+  const input = document.getElementById('od-upload-input');
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const fach = modalKey.split('_')[0];
   const token = await getAccessToken();
   if (!token) return;
-  const btn = document.getElementById('modal-od-btn');
-  btn.textContent = '⏳';
-  btn.disabled = true;
-  try {
-    // Ordner abrufen oder anlegen
-    let res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${folderPath}`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    if (res.status === 404) {
-      res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${folderPath}`, {
-        method: 'PUT',
-        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
-      });
-    }
-    const data = await res.json();
-    if (data.webUrl) window.open(data.webUrl, '_blank');
-  } catch(e) { console.error('OD-Ordner-Fehler', e); }
-  btn.textContent = '📁 OneDrive';
-  btn.disabled = false;
+  const list = document.getElementById('od-files-list');
+  list.innerHTML = '<div class="od-upload-progress">Lade hoch…</div>';
+  // Ordner sicherstellen
+  await getOrCreateFolder(fach);
+  for (const file of files) {
+    const safeName = file.name.replace(/[<>:"/\\|?*]/g, '_');
+    await fetch(
+      `https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}/${safeName}:/content`,
+      { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': file.type || 'application/octet-stream' }, body: file }
+    );
+  }
+  input.value = '';
+  await loadOdFiles(fach);
 }
 function selStatus(st) {
   modalStatus = st;
