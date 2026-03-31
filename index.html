@@ -552,12 +552,6 @@ function updateWocheUI() {
   document.getElementById('btn-b').className = 'woche-btn' + (currentWoche==='B'?' active-b':'');
 }
 
-function setWoche(w) {
-  currentWoche = w;
-  updateWocheUI();
-  renderGrid();
-}
-
 // ── RENDER GRID ──────────────────────────────────────────
 function renderGrid() {
   const grid = document.getElementById('sp-grid');
@@ -698,7 +692,7 @@ async function loadOdFiles(fach, klasse) {
     list.innerHTML = files.map(f => {
       const date = new Date(f.lastModifiedDateTime).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
       const icon = fileIcon(f.name);
-      return `<div class="od-file-item"><span>${icon}</span><a href="${f.webUrl}" target="_blank">${escapeHtml(f.name)}</a><span class="od-file-date">${date}</span></div>`;
+      return `<div class="od-file-item"><span>${icon}</span><a href="${escapeHtml(f.webUrl)}" target="_blank" rel="noopener">${escapeHtml(f.name)}</a><span class="od-file-date">${date}</span></div>`;
     }).join('');
   } catch(e) { list.innerHTML = ''; }
 }
@@ -761,7 +755,7 @@ async function openOneNote() {
       }
     }
     // Abschnitt für Fach holen oder anlegen
-    const secRes = await fetch(`https://graph.microsoft.com/v1.0/me/onenote/notebooks/${onNoteBookId}/sections?$filter=displayName eq '${fach}'`, {
+    const secRes = await fetch(`https://graph.microsoft.com/v1.0/me/onenote/notebooks/${onNoteBookId}/sections?$filter=displayName eq '${encodeURIComponent(fach)}'`, {
       headers: { Authorization: 'Bearer ' + token }
     });
     const secData = await secRes.json();
@@ -935,13 +929,13 @@ const GRAPH_FILE = 'https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsp
 const GRAPH_SCOPES = ['Files.ReadWrite', 'Notes.ReadWrite'];
 let onNoteBookId = null;
 
-function setSyncStatus(state) {
+function setSyncStatus(syncState) {
   const el = document.getElementById('sync-status');
-  el.className = 'sync-status ' + state;
+  el.className = 'sync-status ' + syncState;
   el.style.display = '';
   const labels = { syncing: '🔄', synced: '✓ OneDrive', error: '⚠ Sync-Fehler' };
-  el.textContent = labels[state] || '';
-  if (state === 'error') el.onclick = () => syncToOneDrive();
+  el.textContent = labels[syncState] || '';
+  if (syncState === 'error') el.onclick = () => syncToOneDrive();
   else el.onclick = null;
 }
 
@@ -975,6 +969,7 @@ function initMsal(clientId) {
     system: { navigateToLoginRequestUrl: false }
   });
   msalInstance.initialize().then(() => {
+    updateOdUI(false);
     msalInstance.handleRedirectPromise().then(result => {
       if (result && result.account) {
         msAccount = result.account;
@@ -989,7 +984,7 @@ function initMsal(clientId) {
         loadFromOneDrive();
       }
     }).catch(e => console.error('Redirect-Fehler', e));
-  });
+  }).catch(e => console.error('MSAL-Init-Fehler', e));
 }
 
 function updateOdUI(loggedIn) {
@@ -1010,12 +1005,10 @@ function updateOdUI(loggedIn) {
 async function msToggle() {
   if (!msalInstance) return;
   if (msAccount) {
-    localStorage.removeItem('up_ms_clientid');
     msAccount = null;
     msalInstance = null;
     updateOdUI(false);
-    document.getElementById('od-auth-row').style.display = 'none';
-    document.getElementById('od-setup-row').style.display = 'flex';
+    initMsal(localStorage.getItem('up_ms_clientid'));
   } else {
     try {
       await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES });
@@ -1045,9 +1038,13 @@ async function loadFromOneDrive() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data && typeof data === 'object') {
-      Object.assign(state, data);
-      localStorage.setItem('up_v3', JSON.stringify(state));
-      renderGrid();
+      const remoteTs = data._lastSync || 0;
+      const localTs = state._lastSync || 0;
+      if (remoteTs >= localTs) {
+        Object.assign(state, data);
+        localStorage.setItem('up_v3', JSON.stringify(state));
+        renderGrid();
+      }
     }
     setSyncStatus('synced');
   } catch(e) { console.error('OneDrive laden fehlgeschlagen', e); setSyncStatus('error'); }
@@ -1060,6 +1057,8 @@ function syncToOneDrive() {
     if (!token) return;
     setSyncStatus('syncing');
     try {
+      state._lastSync = Date.now();
+      save();
       const res = await fetch(GRAPH_FILE, {
         method: 'PUT',
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
