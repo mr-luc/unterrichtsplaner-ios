@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Unterricht">
+<meta name="theme-color" content="#1d1d1f">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Unterrichtsplaner</title>
@@ -329,6 +330,98 @@ body {
 }
 .od-btn:hover { opacity: 0.88; }
 .od-btn.logout { background: rgba(0,0,0,0.06); color: var(--muted); }
+
+/* DARK MODE */
+.dark {
+  --bg: #0d0d0f; --surface: rgba(30,30,34,0.8); --surface-solid: #1c1c1e;
+  --border: rgba(255,255,255,0.06); --border-strong: rgba(255,255,255,0.12);
+  --header: #000; --text: #f5f5f7; --muted: #8e8e93; --dim: #636366;
+  --accent-bg: rgba(110,86,207,0.12);
+  --bio-bg: rgba(52,168,83,0.15); --bio-border: rgba(52,168,83,0.3);
+  --che-bg: rgba(8,145,178,0.15); --che-border: rgba(8,145,178,0.3);
+  --it-bg: rgba(110,86,207,0.15); --it-border: rgba(110,86,207,0.3);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2); --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 24px 80px rgba(0,0,0,0.5);
+}
+.dark .topbar { background: rgba(0,0,0,0.85); border-bottom-color: rgba(255,255,255,0.06); }
+.dark .sp-cell.empty { background: rgba(255,255,255,0.02); }
+.dark .ai-input-row { background: rgba(30,30,34,0.8); }
+.dark .ai-msg.assistant .ai-bubble { background: rgba(255,255,255,0.06); }
+.dark .modal { background: #2c2c2e; }
+.dark .modal input, .dark .modal textarea { background: rgba(255,255,255,0.06); }
+.dark .msb { background: transparent; }
+.dark .msb:hover { background: rgba(255,255,255,0.04); }
+.dark .ferien-cell { background: rgba(251,191,36,0.04) !important; }
+.dark .setup-screen { background: #000; }
+.dark .od-header { background: rgba(59,130,246,0.08); }
+.dark .od-btn.logout { background: rgba(255,255,255,0.08); color: var(--muted); }
+.dark .btn-cancel { background: transparent; }
+
+/* THEME TOGGLE */
+.theme-toggle {
+  width: 32px; height: 32px; border: none; border-radius: 8px;
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
+  font-size: 15px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s; flex-shrink: 0;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.14); color: white; }
+
+/* STATS BAR */
+.stats-bar {
+  display: flex; gap: 12px; padding: 8px 16px;
+  border-bottom: 1px solid var(--border); background: var(--accent-bg);
+  font-size: 11px; font-weight: 600; align-items: center;
+}
+.stat-item { display: flex; align-items: center; gap: 5px; color: var(--muted); }
+.stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+.stat-dot.geplant { background: var(--dim); }
+.stat-dot.in-arbeit { background: #f59e0b; }
+.stat-dot.fertig { background: #22c55e; }
+.stat-count { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.stat-bar-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-left: 8px; }
+.stat-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease;
+  background: linear-gradient(90deg, var(--accent), #22c55e); }
+
+/* HEUTE BUTTON */
+.heute-btn {
+  padding: 4px 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+  background: transparent; color: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif;
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.heute-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+
+/* CHAT CLEAR */
+.chat-clear {
+  margin-left: auto; background: none; border: none; color: var(--muted);
+  font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;
+  font-weight: 500; transition: color 0.15s;
+}
+.chat-clear:hover { color: var(--text); }
+
+/* PRINT STYLES */
+@media print {
+  .topbar, .ai-panel, .modal-backdrop, .setup-screen { display: none !important; }
+  .main { display: block !important; }
+  .sp-panel { padding: 0; overflow: visible; }
+  .sp-grid { min-width: 0; gap: 2px; }
+  body { background: white; color: black; font-size: 11px; }
+  .sp-cell { min-height: 50px; page-break-inside: avoid; }
+  .kl-chip { border-width: 1px; }
+  .kl-chip:hover { transform: none; box-shadow: none; }
+  .sp-cell:hover { box-shadow: none; }
+  @page { size: landscape; margin: 10mm; }
+  .print-header { display: block !important; text-align: center; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+}
+.print-header { display: none; }
+
+/* PRINT BUTTON */
+.print-btn {
+  width: 32px; height: 32px; border: none; border-radius: 8px;
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
+  font-size: 14px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s; flex-shrink: 0;
+}
+.print-btn:hover { background: rgba(255,255,255,0.14); color: white; }
 </style>
 </head>
 <body>
@@ -351,23 +444,27 @@ body {
     <div class="topbar-sub">Schulzentrum Oberes Elztal</div>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
-    <button onclick="changeWeek(-1)" style="background:#2e2e44;border:none;color:#aaaacc;font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer">‹</button>
+    <button onclick="changeWeek(-1)" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer">‹</button>
     <div style="text-align:center;min-width:80px">
-      <div id="woche-label" style="font-size:12px;font-weight:700;color:white"></div>
-      <div id="woche-range" style="font-size:10px;color:#8888aa"></div>
+      <div id="woche-label" style="font-size:12px;font-weight:600;color:white"></div>
+      <div id="woche-range" style="font-size:10px;color:rgba(255,255,255,0.4)"></div>
     </div>
-    <button onclick="changeWeek(1)" style="background:#2e2e44;border:none;color:#aaaacc;font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer">›</button>
+    <button onclick="changeWeek(1)" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer">›</button>
+    <button class="heute-btn" onclick="goToday()">Heute</button>
   </div>
   <div class="woche-toggle">
     <button class="woche-btn active-a" id="btn-a" onclick="setWocheManual('A')">A</button>
     <button class="woche-btn" id="btn-b" onclick="setWocheManual('B')">B</button>
   </div>
   <span class="sync-status" id="sync-status" title="OneDrive-Sync" style="display:none"></span>
+  <button class="print-btn" onclick="printPlan()" title="Drucken">🖨</button>
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleDarkMode()" title="Dark Mode">🌙</button>
 </div>
 
 <div class="main">
   <!-- STUNDENPLAN -->
   <div class="sp-panel">
+    <div class="print-header" id="print-header"></div>
     <div class="sp-grid" id="sp-grid"></div>
   </div>
 
@@ -379,7 +476,9 @@ body {
         <div class="ai-header-title">KI-Assistent</div>
         <div class="ai-header-sub">Unterricht einplanen lassen</div>
       </div>
+      <button class="chat-clear" onclick="clearChat()" title="Chat leeren">Leeren</button>
     </div>
+    <div class="stats-bar" id="stats-bar"></div>
     <!-- OneDrive -->
     <div class="od-header" id="od-setup-row">
       <span style="font-size:14px">☁️</span>
@@ -451,6 +550,20 @@ body {
 </div>
 
 <script>
+// ── DARK MODE ────────────────────────────────────────────
+let darkMode = localStorage.getItem('up_dark') === '1';
+function applyDarkMode() {
+  document.body.classList.toggle('dark', darkMode);
+  document.getElementById('theme-toggle').textContent = darkMode ? '☀️' : '🌙';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', darkMode ? '#000' : '#1d1d1f');
+}
+function toggleDarkMode() {
+  darkMode = !darkMode;
+  localStorage.setItem('up_dark', darkMode ? '1' : '0');
+  applyDarkMode();
+}
+applyDarkMode();
+
 // ── STUNDENPLAN DATA ─────────────────────────────────────
 const STUNDEN = [
   { std:1, von:"07:30", bis:"08:15" },
@@ -870,7 +983,7 @@ function saveModal() {
   state[modalKey].thema  = document.getElementById('modal-thema').value;
   state[modalKey].notiz  = document.getElementById('modal-notiz').value;
   state[modalKey].status = modalStatus;
-  save(); closeModal(); renderGrid(); syncToOneDrive();
+  save(); closeModal(); renderGrid(); updateStats(); syncToOneDrive();
 }
 function closeModal(e) {
   if (e && e.target !== document.getElementById('modal-backdrop')) return;
@@ -928,6 +1041,7 @@ async function sendMessage() {
   input.style.height = 'auto';
   addMessage('user', text);
   aiHistory.push({ role: 'user', content: text });
+  saveChatHistory();
 
   aiLoading = true;
   document.getElementById('ai-send-btn').disabled = true;
@@ -960,6 +1074,7 @@ async function sendMessage() {
 
     const reply = data.content[0].text;
     aiHistory.push({ role: 'assistant', content: reply });
+    saveChatHistory();
 
     // Parse updates
     const updMatch = reply.match(/<UPDATES>([\s\S]*?)<\/UPDATES>/);
@@ -977,7 +1092,7 @@ async function sendMessage() {
           if (VALID_STATUSES.includes(vals.status)) state[key].status = vals.status;
           count++;
         });
-        save(); renderGrid(); syncToOneDrive();
+        save(); renderGrid(); updateStats(); syncToOneDrive();
         displayText += `\n\n✅ ${count} Klasse${count!==1?'n':''} aktualisiert.`;
       } catch(e) { console.error('Parse error', e); }
     }
@@ -997,10 +1112,78 @@ async function sendMessage() {
 
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Escape') closeModal();
 }
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── CHAT PERSISTENZ ─────────────────────────────────────
+function saveChatHistory() {
+  try { localStorage.setItem('up_chat', JSON.stringify(aiHistory.slice(-30))); } catch {}
+}
+function loadChatHistory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('up_chat') || '[]');
+    if (!saved.length) return;
+    aiHistory = saved;
+    const msgs = document.getElementById('ai-messages');
+    saved.forEach(m => {
+      const displayText = m.role === 'assistant'
+        ? m.content.replace(/<UPDATES>[\s\S]*?<\/UPDATES>/g, '').trim()
+        : m.content;
+      const div = document.createElement('div');
+      div.className = `ai-msg ${m.role}`;
+      div.innerHTML = `<div class="ai-bubble">${escapeHtml(displayText).replace(/\n/g,'<br>')}</div>`;
+      msgs.appendChild(div);
+    });
+    msgs.scrollTop = msgs.scrollHeight;
+  } catch {}
+}
+function clearChat() {
+  aiHistory = [];
+  localStorage.removeItem('up_chat');
+  const msgs = document.getElementById('ai-messages');
+  msgs.innerHTML = `<div class="ai-msg assistant">
+    <div class="ai-bubble">Chat geleert. Wie kann ich helfen?</div>
+  </div>`;
+}
+
+// ── STATISTIK ───────────────────────────────────────────
+function updateStats() {
+  const counts = { geplant: 0, 'in-arbeit': 0, fertig: 0 };
+  const total = ALL_KLASSEN.length;
+  ALL_KLASSEN.forEach(kl => {
+    const [fach, klasse] = kl.split(' ');
+    const s = getS(fach, klasse);
+    counts[s.status]++;
+  });
+  const pct = total ? Math.round((counts.fertig / total) * 100) : 0;
+  document.getElementById('stats-bar').innerHTML = `
+    <span class="stat-item"><span class="stat-dot geplant"></span>Geplant <span class="stat-count">${counts.geplant}</span></span>
+    <span class="stat-item"><span class="stat-dot in-arbeit"></span>In Arbeit <span class="stat-count">${counts['in-arbeit']}</span></span>
+    <span class="stat-item"><span class="stat-dot fertig"></span>Fertig <span class="stat-count">${counts.fertig}</span></span>
+    <span class="stat-bar-wrap"><span class="stat-bar-fill" style="width:${pct}%"></span></span>
+    <span class="stat-item" style="color:var(--accent)"><span class="stat-count">${pct}%</span></span>
+  `;
+}
+
+// ── HEUTE & DRUCKEN ─────────────────────────────────────
+function goToday() {
+  weekOffset = 0;
+  currentWoche = wocheFromDate(getMonday(0));
+  updateWocheUI();
+  renderGrid();
+}
+function printPlan() {
+  const monday = getMonday(weekOffset);
+  const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
+  const fmt = d => d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const kw = getIsoWeek(monday);
+  document.getElementById('print-header').textContent =
+    `Unterrichtsplaner \u2013 KW ${kw} (${fmt(monday)} \u2013 ${fmt(friday)}) \u2013 ${currentWoche}-Woche`;
+  window.print();
 }
 
 // ── ONEDRIVE / MSAL ──────────────────────────────────────
@@ -1162,6 +1345,8 @@ if (!apiKey) {
 currentWoche = wocheFromDate(getMonday(0));
 updateWocheUI();
 renderGrid();
+updateStats();
+loadChatHistory();
 
 // OneDrive init
 const savedClientId = localStorage.getItem('up_ms_clientid');
@@ -1171,6 +1356,9 @@ if (savedClientId) {
   document.getElementById('od-auth-row').style.display = 'flex';
   initMsal(savedClientId);
 }
+
+// Escape schließt Modal
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // Service Worker für Offline-Support
 if ('serviceWorker' in navigator) {
