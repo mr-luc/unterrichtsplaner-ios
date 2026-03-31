@@ -188,6 +188,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
 .btn-save { flex: 1; padding: 11px; border: none; border-radius: 8px; background: var(--ai); color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
 .btn-cancel { padding: 11px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: white; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
+.btn-od-folder { padding: 11px 14px; border: 1.5px solid #0078d4; border-radius: 8px; background: white; color: #0078d4; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
 
 /* SETUP SCREEN */
 .setup-screen {
@@ -330,6 +331,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <div class="modal-actions">
       <button class="btn-save" onclick="saveModal()">Speichern</button>
       <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-od-folder" id="modal-od-btn" onclick="openOdFolder()" style="display:none">📁 OneDrive</button>
     </div>
   </div>
 </div>
@@ -505,7 +507,37 @@ function openModal(fach, klasse) {
   document.getElementById('modal-thema').value = s.thema || '';
   document.getElementById('modal-notiz').value  = s.notiz  || '';
   selStatus(s.status);
+  document.getElementById('modal-od-btn').style.display = msAccount ? '' : 'none';
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+async function openOdFolder() {
+  if (!msAccount) return;
+  const parts = modalKey.split('_');
+  const fach = parts[0];
+  const folderPath = `unterrichtsplaner/${fach}`;
+  const token = await getAccessToken();
+  if (!token) return;
+  const btn = document.getElementById('modal-od-btn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    // Ordner abrufen oder anlegen
+    let res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${folderPath}`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (res.status === 404) {
+      res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${folderPath}`, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+      });
+    }
+    const data = await res.json();
+    if (data.webUrl) window.open(data.webUrl, '_blank');
+  } catch(e) { console.error('OD-Ordner-Fehler', e); }
+  btn.textContent = '📁 OneDrive';
+  btn.disabled = false;
 }
 function selStatus(st) {
   modalStatus = st;
