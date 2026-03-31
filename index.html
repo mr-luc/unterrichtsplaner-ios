@@ -189,6 +189,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .btn-save { flex: 1; padding: 11px; border: none; border-radius: 8px; background: var(--ai); color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
 .btn-cancel { padding: 11px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: white; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
 .btn-od-folder { padding: 11px 14px; border: 1.5px solid #0078d4; border-radius: 8px; background: white; color: #0078d4; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
+.btn-onenote { padding: 11px 14px; border: 1.5px solid #7719aa; border-radius: 8px; background: white; color: #7719aa; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; }
 .od-file-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; border:1px solid var(--border); margin-bottom:5px; background:white; }
 .od-file-item a { flex:1; color:var(--text); text-decoration:none; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .od-file-item a:hover { color:#0078d4; }
@@ -349,6 +350,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <button class="btn-save" onclick="saveModal()">Speichern</button>
       <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
       <button class="btn-od-folder" id="modal-od-btn" onclick="openOdFolder()" style="display:none">📁 OneDrive</button>
+      <button class="btn-onenote" id="modal-on-btn" onclick="openOneNote()" style="display:none">📓 OneNote</button>
     </div>
   </div>
 </div>
@@ -526,6 +528,7 @@ function openModal(fach, klasse) {
   selStatus(s.status);
   const hasOd = !!msAccount;
   document.getElementById('modal-od-btn').style.display = hasOd ? '' : 'none';
+  document.getElementById('modal-on-btn').style.display = hasOd ? '' : 'none';
   document.getElementById('od-files-section').style.display = hasOd ? '' : 'none';
   if (hasOd) loadOdFiles(fach);
   document.getElementById('modal-backdrop').classList.add('open');
@@ -611,6 +614,55 @@ async function uploadFiles() {
   input.value = '';
   await loadOdFiles(fach);
 }
+
+async function openOneNote() {
+  if (!msAccount) return;
+  const fach = modalKey.split('_')[0];
+  const btn = document.getElementById('modal-on-btn');
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    const token = await getAccessToken();
+    if (!token) return;
+    // Notizbuch holen oder anlegen
+    if (!onNoteBookId) {
+      const nbRes = await fetch("https://graph.microsoft.com/v1.0/me/onenote/notebooks?$filter=displayName eq 'Unterrichtsplaner'", {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const nbData = await nbRes.json();
+      if (nbData.value && nbData.value.length > 0) {
+        onNoteBookId = nbData.value[0].id;
+      } else {
+        const createRes = await fetch('https://graph.microsoft.com/v1.0/me/onenote/notebooks', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayName: 'Unterrichtsplaner' })
+        });
+        const nb = await createRes.json();
+        onNoteBookId = nb.id;
+      }
+    }
+    // Abschnitt für Fach holen oder anlegen
+    const secRes = await fetch(`https://graph.microsoft.com/v1.0/me/onenote/notebooks/${onNoteBookId}/sections?$filter=displayName eq '${fach}'`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const secData = await secRes.json();
+    let sectionUrl;
+    if (secData.value && secData.value.length > 0) {
+      sectionUrl = secData.value[0].links?.oneNoteWebUrl?.href;
+    } else {
+      const createSec = await fetch(`https://graph.microsoft.com/v1.0/me/onenote/notebooks/${onNoteBookId}/sections`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: fach })
+      });
+      const sec = await createSec.json();
+      sectionUrl = sec.links?.oneNoteWebUrl?.href;
+    }
+    if (sectionUrl) window.open(sectionUrl, '_blank');
+  } catch(e) { console.error('OneNote-Fehler', e); }
+  btn.textContent = '📓 OneNote'; btn.disabled = false;
+}
+
 function selStatus(st) {
   modalStatus = st;
   document.querySelectorAll('.msb').forEach(b => b.className = 'msb');
@@ -761,7 +813,8 @@ let msalInstance = null;
 let msAccount = null;
 let syncDebounceTimer = null;
 const GRAPH_FILE = 'https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner.json:/content';
-const GRAPH_SCOPES = ['Files.ReadWrite'];
+const GRAPH_SCOPES = ['Files.ReadWrite', 'Notes.ReadWrite'];
+let onNoteBookId = null;
 
 function setSyncStatus(state) {
   const el = document.getElementById('sync-status');
