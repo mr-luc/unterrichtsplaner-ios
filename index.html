@@ -692,7 +692,7 @@ function initMsal(clientId) {
   msalInstance = new msal.PublicClientApplication({
     auth: {
       clientId,
-      authority: 'https://login.microsoftonline.com/organizations',
+      authority: 'https://login.microsoftonline.com/common',
       redirectUri: 'https://mr-luc.github.io/unterrichtsplaner/'
     },
     cache: { cacheLocation: 'localStorage' },

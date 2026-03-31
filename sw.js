@@ -25,8 +25,10 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // API calls: immer Netzwerk, nie cachen
-  if (e.request.url.includes('anthropic.com') || e.request.url.includes('fonts.g')) {
+  // API calls + Auth-Redirect: immer Netzwerk, nie cachen
+  if (e.request.url.includes('anthropic.com') || e.request.url.includes('fonts.g') ||
+      e.request.url.includes('login.microsoftonline.com') || e.request.url.includes('graph.microsoft.com') ||
+      e.request.url.includes('?code=') || e.request.url.includes('?error=')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;
   }
