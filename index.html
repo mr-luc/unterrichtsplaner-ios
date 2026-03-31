@@ -530,22 +530,28 @@ function openModal(fach, klasse) {
   document.getElementById('modal-od-btn').style.display = hasOd ? '' : 'none';
   document.getElementById('modal-on-btn').style.display = hasOd ? '' : 'none';
   document.getElementById('od-files-section').style.display = hasOd ? '' : 'none';
-  if (hasOd) loadOdFiles(fach);
+  if (hasOd) loadOdFiles(fach, klasse);
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
-async function getOrCreateFolder(fach) {
+async function getOrCreateFolder(fach, klasse) {
   const token = await getAccessToken();
   if (!token) return null;
-  const folderPath = `unterrichtsplaner/${fach}`;
+  const folderPath = `unterrichtsplaner/${fach}/${klasse}`;
   let res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${folderPath}`, {
     headers: { Authorization: 'Bearer ' + token }
   });
   if (res.status === 404) {
-    res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner:/children`, {
+    // Erst Fach-Ordner anlegen, dann Klassen-Unterordner
+    await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner:/children`, {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: fach, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+      body: JSON.stringify({ name: fach, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' })
+    });
+    res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}:/children`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: klasse, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
     });
   }
   return res.ok ? await res.json() : null;
@@ -553,22 +559,22 @@ async function getOrCreateFolder(fach) {
 
 async function openOdFolder() {
   if (!msAccount) return;
-  const fach = modalKey.split('_')[0];
+  const [fach, klasse] = modalKey.split('_');
   const btn = document.getElementById('modal-od-btn');
   btn.textContent = '⏳'; btn.disabled = true;
-  const folder = await getOrCreateFolder(fach);
+  const folder = await getOrCreateFolder(fach, klasse);
   if (folder?.webUrl) window.open(folder.webUrl, '_blank');
   btn.textContent = '📁 OneDrive'; btn.disabled = false;
 }
 
-async function loadOdFiles(fach) {
+async function loadOdFiles(fach, klasse) {
   const list = document.getElementById('od-files-list');
   list.innerHTML = '<div class="od-file-loading">Laden…</div>';
   const token = await getAccessToken();
   if (!token) { list.innerHTML = ''; return; }
   try {
     const res = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}:/children?$orderby=lastModifiedDateTime desc&$top=10&$select=name,webUrl,lastModifiedDateTime,file`,
+      `https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}/${klasse}:/children?$orderby=lastModifiedDateTime desc&$top=10&$select=name,webUrl,lastModifiedDateTime,file`,
       { headers: { Authorization: 'Bearer ' + token } }
     );
     if (res.status === 404) { list.innerHTML = '<div class="od-file-loading">Noch keine Dateien</div>'; return; }
@@ -597,22 +603,21 @@ async function uploadFiles() {
   const input = document.getElementById('od-upload-input');
   const files = Array.from(input.files);
   if (!files.length) return;
-  const fach = modalKey.split('_')[0];
+  const [fach, klasse] = modalKey.split('_');
   const token = await getAccessToken();
   if (!token) return;
   const list = document.getElementById('od-files-list');
   list.innerHTML = '<div class="od-upload-progress">Lade hoch…</div>';
-  // Ordner sicherstellen
-  await getOrCreateFolder(fach);
+  await getOrCreateFolder(fach, klasse);
   for (const file of files) {
     const safeName = file.name.replace(/[<>:"/\\|?*]/g, '_');
     await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}/${safeName}:/content`,
+      `https://graph.microsoft.com/v1.0/me/drive/root:/unterrichtsplaner/${fach}/${klasse}/${safeName}:/content`,
       { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': file.type || 'application/octet-stream' }, body: file }
     );
   }
   input.value = '';
-  await loadOdFiles(fach);
+  await loadOdFiles(fach, klasse);
 }
 
 async function openOneNote() {
