@@ -487,9 +487,9 @@ function saveApiKey() {
 
 // ── WOCHE ────────────────────────────────────────────────
 let currentWoche = "A";
-let weekOffset = 0; // 0 = aktuelle Woche
-// Referenz: KW1 2024 = A-Woche (anpassbar)
-const AB_REF_MONDAY = new Date(2024, 0, 1); // 01.01.2024 = KW1 = A
+let weekOffset = 0;
+// Referenz: 23.03.2026 (KW 13) = B-Woche (letzte Schulwoche vor Osterferien)
+const AB_REF_MONDAY = new Date(2026, 2, 23);
 
 function getMonday(offset) {
   const now = new Date();
@@ -508,14 +508,28 @@ function getIsoWeek(date) {
   return 1 + Math.round(((d-week1)/86400000 - 3 + (week1.getDay()+6)%7)/7);
 }
 
+// Zählt Schulwochen (ohne Ferien) zwischen Referenz und Ziel
 function wocheFromDate(monday) {
-  return getIsoWeek(monday) % 2 === 0 ? 'A' : 'B';
+  const m = new Date(monday); m.setHours(0,0,0,0);
+  const refTime = AB_REF_MONDAY.getTime();
+  const targetTime = m.getTime();
+  if (refTime === targetTime) return 'B'; // Referenz = B
+  const forward = targetTime > refTime;
+  let schoolWeeks = 0;
+  let d = new Date(refTime);
+  while (d.getTime() !== targetTime) {
+    d.setDate(d.getDate() + (forward ? 7 : -7));
+    if (!getFerienName(d)) schoolWeeks++;
+  }
+  // Referenz B: ungerade Schulwochen = A, gerade = B
+  return schoolWeeks % 2 === 1 ? 'A' : 'B';
 }
 
 function changeWeek(delta) {
   weekOffset += delta;
   const monday = getMonday(weekOffset);
-  currentWoche = wocheFromDate(monday);
+  const auto = !getFerienName(monday);
+  if (auto) currentWoche = wocheFromDate(monday);
   updateWocheUI();
   renderGrid();
 }
@@ -531,7 +545,8 @@ function updateWocheUI() {
   const friday = new Date(monday); friday.setDate(monday.getDate() + 4);
   const fmt = d => d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
   const kw = getIsoWeek(monday);
-  document.getElementById('woche-label').textContent = `KW ${kw} · ${currentWoche}-Woche`;
+  const ferien = getFerienName(monday);
+  document.getElementById('woche-label').textContent = ferien ? `KW ${kw} · ${ferien}` : `KW ${kw} · ${currentWoche}-Woche`;
   document.getElementById('woche-range').textContent = `${fmt(monday)} – ${fmt(friday)}`;
   document.getElementById('btn-a').className = 'woche-btn' + (currentWoche==='A'?' active-a':'');
   document.getElementById('btn-b').className = 'woche-btn' + (currentWoche==='B'?' active-b':'');
