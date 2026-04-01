@@ -1,33 +1,25 @@
-# Unterrichtsplaner iOS
+# Unterrichtsplaner – Monorepo
 
-Native Apple-Version des Unterrichtsplaners als SwiftUI-App für iPhone und iPad.
+Dieses Repository enthält alle Plattform-Varianten des Unterrichtsplaners.
 
-## Ziel
-Diese App bildet die Weblösung als reine Apple-App nach – mit einer Apple-typischen Bedienung, lokaler Datenspeicherung und einer klaren Struktur für Unterricht, Klassen, Stunden und Notizen.
+## Struktur
 
-## Geplanter Funktionsumfang
-- Übersicht über Klassen
-- Unterrichtseinheiten und Stundenplanung
-- Notizen pro Stunde
-- Aufgaben / To-dos
-- Kalendernahe Planung
-- Lokale Datenspeicherung
-- Später erweiterbar um iCloud-Sync
+```
+Unterrichtsplaner/
+├── Web-App/        # Progressive Web App (HTML/JS/CSS)
+├── iOS-App/        # Native iOS App (Swift/SwiftUI)
+└── Windows-App/    # Windows App (in Entwicklung)
+```
 
-## Technischer Ansatz
-- SwiftUI
-- SwiftData
-- NavigationStack / TabView
-- iPhone- und iPad-optimiert
+## Apps
 
-## Projektstruktur
-- `UnterrichtsplanerApp.swift` – Einstiegspunkt
-- `Models/` – Datenmodelle
-- `Views/` – SwiftUI-Ansichten
-- `SampleData/` – Beispieldaten für Vorschau und Start
+### Web-App
+Progressive Web App, läuft im Browser auf allen Geräten.
+Technologien: HTML, JavaScript, CSS, Service Worker
 
-## Nächste Schritte
-1. Xcode-Projekt anlegen
-2. Datenmodell verfeinern
-3. Webfunktionen gezielt in native Ansichten übertragen
-4. Sync / Export prüfen
+### iOS-App
+Native App für iPhone und iPad.
+Technologien: Swift, SwiftUI
+
+### Windows-App
+Windows-Desktop-Anwendung (noch in Planung).
