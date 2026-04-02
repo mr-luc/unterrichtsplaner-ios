@@ -1,0 +1,51 @@
+name: Windows App Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: .NET 8 SDK einrichten
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build & Publish (Self-contained EXE)
+        run: |
+          dotnet publish Windows-App/Unterrichtsplaner/Unterrichtsplaner.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o publish/
+
+      - name: Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unterrichtsplaner-Windows
+          path: publish/Unterrichtsplaner.exe
+
+      - name: GitHub Release erstellen
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/Unterrichtsplaner.exe
+          name: "Unterrichtsplaner ${{ github.ref_name }}"
+          body: |
+            ## Unterrichtsplaner Windows-App
+
+            ### Installation
+            1. `Unterrichtsplaner.exe` herunterladen
+            2. Doppelklick – fertig, keine Installation nötig
+
+            ### Voraussetzungen
+            Keine – die EXE ist vollständig eigenständig (self-contained).

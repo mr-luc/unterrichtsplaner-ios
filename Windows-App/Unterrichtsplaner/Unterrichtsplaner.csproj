@@ -7,6 +7,6 @@
     <RootNamespace>Unterrichtsplaner</RootNamespace>
     <AssemblyName>Unterrichtsplaner</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <Cultures>de</Cultures>
   </PropertyGroup>
 </Project>

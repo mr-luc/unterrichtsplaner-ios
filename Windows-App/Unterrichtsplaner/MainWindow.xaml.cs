@@ -19,7 +19,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         var kw = ISOWeek.GetWeekOfYear(DateTime.Today);
-        WochenInfo.Text = $"KW {kw} \u00b7 {DateTime.Today:dddd, d. MMMM yyyy}";
+        var de = new System.Globalization.CultureInfo("de-DE");
+        WochenInfo.Text = $"KW {kw} \u00b7 {DateTime.Today.ToString("dddd, d. MMMM yyyy", de)}";
         BuildGrid();
     }
 
@@ -165,6 +166,8 @@ public partial class MainWindow : Window
             Tag = vorgabe
         };
         border.MouseLeftButtonUp += CellClicked;
+        border.MouseEnter  += (s, _) => { if (s is Border b) b.Opacity = 0.80; };
+        border.MouseLeave  += (s, _) => { if (s is Border b) b.Opacity = 1.00; };
 
         var innerGrid = new Grid();
         innerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3) });
