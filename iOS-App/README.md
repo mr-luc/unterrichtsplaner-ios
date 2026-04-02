@@ -1,33 +1,44 @@
-# Unterrichtsplaner iOS
+# Unterrichtsplaner – iOS App
 
-Native Apple-Version des Unterrichtsplaners als SwiftUI-App für iPhone und iPad.
+Native SwiftUI App für iPhone und iPad (iOS 17+).
 
-## Ziel
-Diese App bildet die Weblösung als reine Apple-App nach – mit einer Apple-typischen Bedienung, lokaler Datenspeicherung und einer klaren Struktur für Unterricht, Klassen, Stunden und Notizen.
+## Voraussetzungen
 
-## Geplanter Funktionsumfang
-- Übersicht über Klassen
-- Unterrichtseinheiten und Stundenplanung
-- Notizen pro Stunde
-- Aufgaben / To-dos
-- Kalendernahe Planung
-- Lokale Datenspeicherung
-- Später erweiterbar um iCloud-Sync
+- macOS mit Xcode 15 oder neuer
+- iOS 17+ Deployment Target (wegen SwiftData)
 
-## Technischer Ansatz
-- SwiftUI
-- SwiftData
-- NavigationStack / TabView
-- iPhone- und iPad-optimiert
+## Projekt öffnen
 
-## Projektstruktur
-- `UnterrichtsplanerApp.swift` – Einstiegspunkt
-- `Models/` – Datenmodelle
-- `Views/` – SwiftUI-Ansichten
-- `SampleData/` – Beispieldaten für Vorschau und Start
+```bash
+open iOS-App/Unterrichtsplaner.xcodeproj
+```
 
-## Nächste Schritte
-1. Xcode-Projekt anlegen
-2. Datenmodell verfeinern
-3. Webfunktionen gezielt in native Ansichten übertragen
-4. Sync / Export prüfen
+## Struktur
+
+```
+iOS-App/
+├── UnterrichtsplanerApp.swift   # App-Einstiegspunkt (@main)
+├── ContentView.swift             # Haupt-View
+├── Models/
+│   ├── Stundenplan.swift           # SwiftData @Model
+│   ├── PlanEintrag.swift
+│   ├── PlanStatus.swift
+│   ├── StundenKonfiguration.swift
+│   └── StundenEintragVorgabe.swift
+├── Services/
+│   ├── PlanRepository.swift
+│   └── WochenService.swift
+└── Views/
+    ├── StundenplanGridView.swift
+    ├── EditEintragSheet.swift
+    └── ...
+```
+
+## CI/CD
+
+GitHub Actions baut die App automatisch beim Push auf `main`.
+
+> **Hinweis:** Das Xcode-Projekt (`Unterrichtsplaner.xcodeproj`) muss im
+> Ordner `iOS-App/` committed sein, damit der CI-Build funktioniert.
+> Aus Xcode heraus: **File → Save** stellt sicher, dass alle Änderungen
+> in der `.xcodeproj`-Datei gespeichert sind.

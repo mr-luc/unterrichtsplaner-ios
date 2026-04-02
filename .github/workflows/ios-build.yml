@@ -1,0 +1,37 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'iOS-App/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode-Version ausgeben
+        run: xcodebuild -version
+
+      - name: Für iOS Simulator bauen (ohne Signierung)
+        run: |
+          xcodebuild build \
+            -project iOS-App/Unterrichtsplaner.xcodeproj \
+            -scheme Unterrichtsplaner \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || xcodebuild build \
+            -project iOS-App/Unterrichtsplaner.xcodeproj \
+            -scheme Unterrichtsplaner \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
