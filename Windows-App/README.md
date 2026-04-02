@@ -1,22 +1,34 @@
-# Windows-App
+# Unterrichtsplaner – Windows App
 
-Start der Windows-Version des Unterrichtsplaners.
+Native WPF Desktop-App für Windows (.NET 8).
 
-## Ziel
-Diese Variante bildet die Web-Version als native Windows-Desktop-App nach.
+## Voraussetzungen
 
-## Geplanter Umfang
-- Stundenplan mit Mo–Fr
-- A/B-Woche
-- Thema / Notiz / Status pro Klasse
-- bearbeitbare Stundenzeiten
-- lokale Speicherung
-- später erweiterbar um OneDrive-Sync
+- Windows 10 oder Windows 11
+- [.NET 8 SDK](https://dotnet.microsoft.com/de-de/download/dotnet/8.0)
 
-## Technik
-- C#
-- WinUI 3
-- Windows App SDK
+## Starten (Entwicklung)
 
-## Hinweis
-Aktuell liegen hier die ersten Quellcodedateien für Models, Services und das Grundgerüst der App. Das Projekt ist als Startpaket für den vorhandenen Platzhalter gedacht.
+```bash
+cd Windows-App/Unterrichtsplaner
+dotnet run
+```
+
+## Als EXE veröffentlichen
+
+```bash
+cd Windows-App/Unterrichtsplaner
+dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+```
+
+Die EXE liegt dann unter:
+`bin\Release\net8.0-windows\win-x64\publish\Unterrichtsplaner.exe`
+
+## Features
+
+- Stundenplan-Ansicht (Mo–Fr, 1.–9. Stunde)
+- Farbcodierung nach Fach (Biologie 🟢, Chemie 🔵, IT 🟣)
+- Heutiger Tag wird hervorgehoben
+- Thema und Notiz pro Unterrichtsstunde bearbeitbar (Klick auf Zelle)
+- Status: Geplant / In Arbeit / Fertig
+- Automatisches Speichern in `%AppData%\Unterrichtsplaner\daten.json`
