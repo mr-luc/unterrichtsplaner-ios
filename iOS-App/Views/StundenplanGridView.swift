@@ -5,6 +5,10 @@ struct StundenplanGridView: View {
     let stunden = StundenKonfiguration.alle
     let aktuelleWoche = WochenService.wocheTyp(for: WochenService.aktuellerMontag())
 
+    @State private var pdfURL: URL?
+    @State private var zeigeShareSheet = false
+    @State private var exportLaeuft = false
+
     var body: some View {
         ScrollView([.horizontal, .vertical]) {
             VStack(alignment: .leading, spacing: 8) {
@@ -27,6 +31,38 @@ struct StundenplanGridView: View {
             .padding()
         }
         .navigationTitle("Stundenplan")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                exportButton
+            }
+        }
+        .sheet(isPresented: $zeigeShareSheet) {
+            if let url = pdfURL {
+                ShareSheet(activityItems: [url])
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var exportButton: some View {
+        if exportLaeuft {
+            ProgressView()
+        } else {
+            Button {
+                Task {
+                    exportLaeuft = true
+                    let montag = WochenService.aktuellerMontag()
+                    pdfURL = await PDFExportService.exportiere(
+                        wocheTyp: aktuelleWoche,
+                        montag: montag
+                    )
+                    exportLaeuft = false
+                    zeigeShareSheet = pdfURL != nil
+                }
+            } label: {
+                Label("Als PDF exportieren", systemImage: "square.and.arrow.up")
+            }
+        }
     }
 
     private var headerRow: some View {
